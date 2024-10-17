@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Org Chart</title>
+    <style>
+        body {
+            background-color: #f0f0f0; /* Light gray background */
+            color: #333; /* Dark text color */
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0; /* Remove default margin */
+            overflow: hidden; /* Prevent scroll bars */
+            height: 100vh; /* Full height of the viewport */
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #2c3e50; /* Darker gray for heading */
+        }
+        .banner {
+            display: flex; /* Flexbox for alignment */
+            align-items: center; /* Center vertically */
+            justify-content: space-between; /* Space out items evenly */
+            background-color: #34495e; /* Dark gray banner */
+            color: #ecf0f1; /* Light text color */
+            padding: 20px;
+            font-size: 1.5em;
+            border-radius: 0px; /* Rounded corners */
+            margin-bottom: px; /* Space below the banner */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2); /* Shadow for the menu */
+
+        }
+        .mini-banner {
+            display: flex; /* Flexbox for alignment */
+            justify-content: space-around; /* Space out items evenly */
+            background-color: #bdc3c7; /* Light gray background */
+            color: #2c3e50; /* Dark text color */
+            padding: 15px; /* Padding for the banner */
+            font-size: 1.2em; /* Font size for the text */
+            border-radius: 0px; /* Rounded corners */
+            margin-bottom: 0px; /* Space below the banner */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2); /* Shadow for the menu */
+
+        }
+        .menu-button, .collapse-button, .expand-button, .next-level-button, .previous-level-button {
+            background-color: #2980b9; /* Blue button */
+            color: white;
+            border: none;
+            padding: 10px 15px; /* Padding for button */
+            cursor: pointer;
+            margin-right: 10px; /* Space to the right of the button */
+            border-radius: 5px; /* Rounded corners */
+            font-size: 1em; /* Font size for the button */
+            transition: background-color 0.3s; /* Transition for hover effect */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2); /* Shadow for the menu */
+
+        }
+        .menu-button:hover, .collapse-button:hover, .expand-button:hover {
+            background-color: #3498db; /* Lighter blue on hover */
+        }
+        .menu {
+            height: 100vh; /* Full height of the viewport */
+            width: 250px; /* Width of the menu */
+            position: fixed; /* Fixed position */
+            left: -250px; /* Hide the menu off-screen */
+            background-color: #ecf0f1; /* Light background */
+            transition: 0.3s; /* Smooth transition */
+            padding: 20px; /* Padding inside the menu */
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2); /* Shadow for the menu */
+            z-index: 1; /* Ensure it's on top */
+        }
+        .menu.active {
+            left: 0; /* Show the menu */
+        }
+        .content {
+            max-width: 100vw; /* Maximum width of the content */
+            max-height: 100vh; /* Maximum height of the content */
+            overflow: auto; /* Enable scrolling if content exceeds size */
+            padding: 50px; /* Padding for content */
+        }
+        .menu ul {
+            list-style-type: none; /* Remove bullet points */
+            padding: 0; /* Remove padding */
+        }
+        .menu li {
+            margin: 10px 0; /* Space between buttons */
+        }
+        .menu a {
+            display: inline-block; /* Make it a block element */
+            background-color: #2980b9; /* Blue background */
+            color: white; /* White text */
+            padding: 10px 15px; /* Padding for buttons */
+            border-radius: 5px; /* Rounded corners */
+            text-decoration: none; /* Remove underline */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Shadow for the buttons */
+            transition: background-color 0.3s; /* Transition for hover effect */
+        }
+        .menu a:hover {
+            background-color: #3498db; /* Lighter blue on hover */
+        }
+        svg {
+            background-color: #fff; /* White background for the SVG */
+            width: 100%;
+            height: calc(100vh - 300px); /* Adjust for banner height */
+            border: 1px solid #ddd; /* Light gray border */
+            border-radius: 8px; /* Rounded corners */
+        }
+        .node rect {
+            cursor: pointer;
+            fill: #fff; /* Default fill color for nodes */
+            border:#2980b9;
+            stroke: #2980b9; /* Blue stroke color */
+            stroke-width: 2px;
+            rx: 10; /* Rounded corners */
+            ry: 10; /* Rounded corners */
+        }
+        .node text {
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            fill: #333;
+        }
+        .link {
+            fill: none;
+            stroke: #2980b9; /* Blue links */
+            stroke-width: 2px;
+        }
+    </style>  
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div class="banner">
+        <button class="menu-button" onclick="toggleMenu()">Menu</button>
+        <button class="collapse-button" id="collapseAllBtn">Collapse All</button>
+        <button class="expand-button" id="expandAllBtn">Expand All</button>
+        <button class="next-level-button" id="expandNxtBtn">Expand Next Level</button>
+        <button class="previous-level-button" id="collapsePrevBtn">Collapse To Last Level</button>
+        <label for="teamDropdown">Filter by Team:</label>
+        <select id="teamDropdown">           
+        </select>
+
+        <div>Org Chart</div>
+    </div>
+       <!-- Mini Banner for Additional Info -->
+       <div class="mini-banner">
+        <div id="positionCount">Number of Positions: 0</div>
+        <div id="maxDepth">Max Depth: 0</div>
+        <div id="">Average Number of Line Reports: In Development</div>
+    </div>
+    <div class="menu" id="menu">
+        <h2>Menu</h2>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="org-chart.html">Org Chart</a></li>
+            <li><a href="table.html">Table</a></li>
+            <li><a href="upload.html">Upload</a></li>
+        </ul>
+    </div>
+    <svg id="org-chart"></svg>
+
+    
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById("menu");
+            menu.classList.toggle("active");
+        }
+
+       // Function to parse CSV data
+function parseCSV(csvString) {
+    // Split CSV string into rows and trim each cell
+    const rows = csvString.split("\n").map(row => 
+        row.split(",").map(cell => cell.trim())
+    );
+
+    const headers = rows[0]; // First row contains headers
+
+    // Map rows to objects using headers as keys
+    const data = rows.slice(1) // Exclude header row
+        .filter(row => row.some(cell => cell !== '')) // Filter out empty rows
+        .map(row => {
+            const obj = {};
+            headers.forEach((header, i) => {
+                obj[header.trim()] = row[i] ? row[i].trim() : null; // Handle missing values
+            });
+            return obj; // Return object for each row
+        });
+
+    return data; // Return parsed data
+}
+
+
+  // Load the data from localStorage
+const csvData = localStorage.getItem("csvData");
+
+if (csvData) {
+    let parsedData = JSON.parse(csvData);
+
+    // If the data is a CSV string, parse it
+    if (typeof parsedData === 'string') {
+        parsedData = parseCSV(parsedData);
+    }
+
+    // Convert parsed data into the correct format for the org chart
+    const employeeData = parsedData.map(row => ({
+        id: row['ID'],             // Assuming your CSV has an 'ID' column
+        name: row['Name'],         // Assuming 'Name' column in the CSV
+        managerId: row['Manager ID'], // Assuming 'Manager ID' column in the CSV
+        team: row['Team'],         // Assuming 'Team' column in the CSV
+        jobTitle: row['Job Title'] // Assuming 'Job Title' column in the CSV
+    }));
+
+
+    function populateTeamDropdown(data) {
+    const dropdown = document.getElementById("teamDropdown");
+    const teams = ["All"]; // Start with 'All' option
+
+    // Get unique team names from the data
+    data.forEach(row => {
+        if (!teams.includes(row.Team)) {
+            teams.push(row.Team);
+        }
+    });
+
+    // Populate dropdown with team options
+    teams.forEach(team => {
+        const option = document.createElement("option");
+        option.value = team;
+        option.text = team;
+        dropdown.appendChild(option);
+    });
+}
+populateTeamDropdown(parsedData);
+
+document.getElementById("teamDropdown").addEventListener("change", function() {
+    const selectedTeam = this.value;
+    filterNodesByTeam(selectedTeam);
+});
+
+
+function filterNodesByTeam(team) {
+    nodes.forEach(node => {
+        // If 'All' is selected or the node's team matches the selected team, show the node
+        if (team === "All" || node.data.team === team) {
+            node.data.visible = true;
+        } else {
+            node.data.visible = false;
+        }
+    });
+    update(root); // Re-render the chart with filtered nodes
+}
+
+
+function update(source) {
+    treeData = treeLayout(root);
+    nodes = treeData.descendants();
+    links = treeData.links();
+
+    svg.selectAll("*").remove();
+
+    // Render only links where both source and target nodes are visible
+    const link = svg.selectAll(".link")
+        .data(links.filter(link => link.source.data.visible && link.target.data.visible))
+        .enter().append("path")
+        .attr("class", "link")
+        .attr("d", d3.linkVertical()
+            .x((d) => d.x)
+            .y((d) => d.y)
+        )
+        .attr("stroke-width", "2px");
+
+    // Render only visible nodes
+    const node = svg.selectAll(".node")
+        .data(nodes.filter(node => node.data.visible))
+        .enter().append("g")
+        .attr("class", "node")
+        .attr("transform", (d) => `translate(${d.x},${d.y})`);
+
+    node.append("rect")
+        .attr("width", 200)
+        .attr("height", 60)
+        .attr("x", -100)
+        .attr("y", -30)
+        .style("fill", "#f4f4f4")
+        .style("stroke", "")
+        .style("rx", 10)
+        .style("ry", 10)
+        .on("click", click);
+
+    node.append("text")
+        .attr("dy", -15)
+        .attr("x", 0)
+        .attr("text-anchor", "middle")
+        .text(d => `${d.data.name} (${d.data.childCount})`)
+        .style("font-size", "15px")
+        .style("fill", "#5e4b8a");
+
+    node.append("text")
+        .attr("dy", 0)
+        .attr("x", 0)
+        .attr("text-anchor", "middle")
+        .text((d) => d.data.jobTitle)
+        .style("font-size", "12px")
+        .style("fill", "#333");
+
+    node.append("text")
+        .attr("dy", 15)
+        .attr("x", 0)
+        .attr("text-anchor", "middle")
+        .text((d) => d.data.team)
+        .style("font-size", "12px")
+        .style("fill", "#333");
+}
+
+
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+// Create the SVG and set its dimensions
+const svg = d3.select("#org-chart")
+    .attr("width", width)
+    .attr("height", height)
+    .call(d3.zoom().on("zoom", zoomed)) // Add zoom behavior
+    .append("g"); // Group to apply zoom transformations
+
+// Prepare the data for the tree layout
+const root = d3.stratify()
+    .id(d => d.id)
+    .parentId(d => d.managerId)(employeeData);
+
+// Define the tree layout
+const treeLayout = d3.tree()
+    .nodeSize([200, 150]);
+
+// Count children for each employee
+employeeData.forEach(employee => {
+    employee.childCount = employeeData.filter(e => e.managerId === employee.id).length; // Count children
+});
+
+let treeData = treeLayout(root);
+let nodes = treeData.descendants();
+let links = treeData.links();
+
+// Expand nodes at first render
+nodes.forEach(d => {
+        d.data.visible = true; // Ensure all nodes are visible
+        if (d.depth > 0) { // Expand all nodes
+            expand(d);
+        }
+    });
+// Update the tree visualization
+update(root);
+ 
+document.getElementById("expandAllBtn").addEventListener("click", () => {
+    nodes.forEach(d => {
+        // Expand the node if its depth is less than the calculated max depth
+        if (d.depth < maxDepth) {
+            expand(d);
+        }
+    });
+    update(root);
+});
+
+// Add event listener for Collapse All button
+document.getElementById("collapseAllBtn").addEventListener("click", () => {
+    nodes.forEach(d => {
+        if (d.depth === 1) {
+            collapse(d);
+        }
+    });
+    update(root);
+
+    // Apply "All" filter on initial render
+const team = "All"; // Set initial filter to "All"
+applyFilter(team); // Call the filter function on page load
+    update(root);
+});
+
+// Add event listener for Expand All button
+document.getElementById("expandAllBtn").addEventListener("click", () => {
+    nodes.forEach(d => {
+        // Expand the node if its depth is less than the calculated max depth
+        if (d.depth < maxDepth) {
+            expand(d);
+        }
+    });
+    update(root);
+});
+
+document.getElementById('expandNxtBtn').addEventListener('click', function() {
+    nodes.forEach(node => {
+        if (node.depth === currentDepth) { // Check if node is at the current depth
+            expand(node); // Expand this node
+        }
+    });
+    currentDepth++; // Increment the depth to expand the next level next time
+
+update(root);
+});
+
+// <Number of Positions>
+    const numberOfPositions = employeeData.length; // Total number of positions
+
+// <Max Depth>
+// After parsing the CSV data and before rendering the org chart
+
+// Create a map of employees for easier access
+const employeeMap = {};
+employeeData.forEach(emp => {
+    employeeMap[emp.id] = emp;
+});
+
+// Function to calculate the depth of each node
+function calculateDepth(employeeId, depth) {
+    const employee = employeeMap[employeeId];
+    if (!employee) return depth; // If no employee found, return current depth
+
+    let maxDepth = depth; // Start with current depth
+    const children = employeeData.filter(emp => emp.managerId === employeeId); // Find children
+
+    // Recursively calculate depth for each child
+    for (const child of children) {
+        maxDepth = Math.max(maxDepth, calculateDepth(child.id, depth + 1)); // Update maxDepth
+    }
+    return maxDepth; // Return the maximum depth found
+}
+
+
+// Assuming your root node(s) have a managerId of null or are the top-level employees
+const rootIds = employeeData.filter(emp => !emp.managerId).map(emp => emp.id); // Get root node IDs
+const maxDepth = Math.max(...rootIds.map(id => calculateDepth(id, 0))); // Calculate max depth for each root node
+
+// Update the mini banner with the calculated max depth
+document.getElementById("maxDepth").innerText = `Max Depth: ${maxDepth}`;
+
+
+// After parsing your employeeData
+employeeData.forEach(employee => {
+    // Count how many children each employee has
+    employee.childCount = employeeData.filter(e => e.managerId === employee.id).length;
+});
+const avgReports = d3.mean(employeeData, d => d.childCount || 0); // Average number of line reports
+
+// Update the mini banner with these values
+document.getElementById("positionCount").innerText = `Number of Positions: ${numberOfPositions}`;
+document.getElementById("maxDepth").innerText = `Max Depth: ${maxDepth}`;
+document.getElementById("avgReports").innerText = `Average Number of Line Reports: ${avgReports.toFixed(2)}`; // Rounded to 2 decimal places
+
+
+            function collapse(d) {
+                if (d.children) {
+                    d._children = d.children;
+                    d.children = null;
+                }
+            }
+
+            function expand(d) {
+                if (d._children) {
+                    d.children = d._children;
+                    d._children = null;
+                }
+            }
+
+            function click(event, d) {
+                if (d.children) {
+                    // Collapse only the children of the clicked node's parent
+                    collapse(d);
+                } else {
+                    // Expand only the immediate children, not all descendants
+                    expand(d);
+                }
+                update(d); // Update the tree
+            }
+
+            function zoomed(event) {
+                svg.attr("transform", event.transform);
+            }
+            function filterTableByTeam(team) {
+    const rows = document.querySelectorAll("table tbody tr"); // Select table rows
+    
+    rows.forEach(row => {
+        const teamCell = row.querySelector("td:nth-child(3)"); // Assuming the team column is the 3rd
+        if (team === "All" || team === "" || teamCell.textContent === team)
+        {
+            row.style.display = ""; // Show row
+        } else {
+            row.style.display = "none"; // Hide row
+        }
+    });
+}
+        }
+    </script>
+</body>
+</html>
